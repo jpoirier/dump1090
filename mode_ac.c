@@ -93,14 +93,15 @@ void decodeModeAMessage(struct modesMessage *mm, int ModeA)
     // Flag ident in flight status
     mm->fs = ModeA & 0x0080;
 
-    // Decode an altitude if this looks like a possible mode C at or below FL600
-    if (!mm->fs) {
+    // Decode an altitude if this looks like a possible mode C at or below FL600.
+    // Use of 'fs' SPI flag isn't reliable (e.g. some Mode C messages seem to send the SPI pulse), so try decoding everything.
+    //if (!mm->fs) {
         int modeC = ModeAToModeC(ModeA);
-        if ((modeC >= -12) && (modeC <= 60)){
+        if ((modeC >= -12) && (modeC <= 600)){
             mm->altitude = modeC * 100;
             mm->bFlags  |= MODES_ACFLAGS_ALTITUDE_VALID;
         }
-    }
+    //}
 
     // Not much else we can tell from a Mode A/C reply.
     // Just fudge up a few bits to keep other code happy
