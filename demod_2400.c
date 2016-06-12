@@ -749,6 +749,10 @@ void demodulate2400AC(struct mag_buf *mag)
 
         // This message looks good, submit it
 
+        // calculate signal power
+        //mm.signalLevel = (f1f2_signal + x1x2x3_noise) * (f1f2_signal + x1x2x3_noise) / MAX_POWER;
+        mm.signalLevel = (f1f2_signal) * (f1f2_signal) / MAX_POWER;
+        
         // compute message receive time as block-start-time + difference in the 12MHz clock
         mm.timestampMsg = mag->sampleTimestamp + f1_clock / 5;  // 60MHz -> 12MHz
         mm.sysTimestampMsg = mag->sysTimestamp; // start of block time
