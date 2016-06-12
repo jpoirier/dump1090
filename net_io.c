@@ -706,6 +706,10 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
         msgType = 7;
     } else if  (mm->msgtype == 11) {
         msgType = 8;
+    } else if  ((mm->msgtype == 32) && (a->modeACflags & MODEAC_MSG_MODEA_ONLY)) { // Unambiguously mode A message. MODEAC_MSG_MODEA_ONLY is set when the SPI pulse is seen, or if 4096 code doesn't decode to a valid altitude beloe FL600.
+        msgType = 10;
+    } else if  ((mm->msgtype == 32) && !(a->modeACflags & MODEAC_MSG_MODEA_ONLY)) { // Ambiguous. Could be either Mode A or Mode C.
+        msgType = 12;
     } else if ((mm->msgtype != 17) && (mm->msgtype != 18)) {
         return;
     } else if ((mm->metype >= 1) && (mm->metype <=  4)) {
@@ -740,7 +744,13 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
         cacf = mm->cf;
     }
     
-	p += sprintf(p, "{\"Icao_addr\":%d,\"DF\":%d,\"CA\":%d,\"TypeCode\":%d,\"SubtypeCode\":%d,\"SBS_MsgType\":%d,\"SignalLevel\":%f,",mm->addr, mm->msgtype, cacf, mm->metype,  mm->mesub, msgType, mm->signalLevel); 
+    int thisAddr = mm->addr;
+    if (msgType == 10) {
+            thisAddr = a->addr | 0x0A000000; // prefix pseudo-icao code with "A"
+    } else if (msgType == 12) {
+        thisAddr = a->addr | 0x0C000000; // prefix pseudo-icao code with "C"
+    }
+	p += sprintf(p, "{\"Icao_addr\":%d,\"DF\":%d,\"CA\":%d,\"TypeCode\":%d,\"SubtypeCode\":%d,\"SBS_MsgType\":%d,\"SignalLevel\":%f,",thisAddr, mm->msgtype, cacf, mm->metype,  mm->mesub, msgType, mm->signalLevel); 
     
  	// Callsign
 	if (mm->bFlags & MODES_ACFLAGS_CALLSIGN_VALID) {
@@ -751,6 +761,7 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
     
     //Squawk code, decimal representation. E.g. the emergency code is represented as 7700 (0x1e14 == 017024), not 4032 (0x0FC0 == 07700)
     if (mm->bFlags & MODES_ACFLAGS_SQUAWK_VALID) {p += sprintf(p, "\"Squawk\":%x,", mm->modeA);}
+    else if (a->bFlags & MODES_ACFLAGS_SQUAWK_VALID) {p += sprintf(p, "\"Squawk\":%x,", a->modeA);} // maybe we picked it up earlier, or from a Mode A message
     else                                         {p += sprintf(p, "\"Squawk\":null,");}    
     
     // Emitter type
@@ -808,7 +819,11 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
 	if ((mm->bFlags & MODES_ACFLAGS_AOG_GROUND) == MODES_ACFLAGS_AOG_GROUND) {  
         p += sprintf(p, "\"Alt\":0,");
     } else if (mm->bFlags & MODES_ACFLAGS_ALTITUDE_VALID) {
-		p += sprintf(p, "\"Alt\":%d,",mm->altitude);
+		if ((msgType != 10) && (msgType != 12)) {
+            p += sprintf(p, "\"Alt\":%d,",mm->altitude);
+        } else {
+            p += sprintf(p, "\"Alt\":%d,",a->altitude);
+        }
     } else {
 		p += sprintf(p, "\"Alt\":null,");
     }

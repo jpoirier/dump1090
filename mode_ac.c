@@ -93,10 +93,10 @@ void decodeModeAMessage(struct modesMessage *mm, int ModeA)
     // Flag ident in flight status
     mm->fs = ModeA & 0x0080;
 
-    // Decode an altitude if this looks like a possible mode C
+    // Decode an altitude if this looks like a possible mode C at or below FL600
     if (!mm->fs) {
         int modeC = ModeAToModeC(ModeA);
-        if (modeC >= -12) {
+        if ((modeC >= -12) && (modeC <= 60)){
             mm->altitude = modeC * 100;
             mm->bFlags  |= MODES_ACFLAGS_ALTITUDE_VALID;
         }
