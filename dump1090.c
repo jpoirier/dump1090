@@ -4,20 +4,20 @@
 //
 // Copyright (c) 2014-2016 Oliver Jowett <oliver@mutability.co.uk>
 //
-// This file is free software: you may copy, redistribute and/or modify it  
+// This file is free software: you may copy, redistribute and/or modify it
 // under the terms of the GNU General Public License as published by the
-// Free Software Foundation, either version 2 of the License, or (at your  
-// option) any later version.  
+// Free Software Foundation, either version 2 of the License, or (at your
+// option) any later version.
 //
-// This file is distributed in the hope that it will be useful, but  
-// WITHOUT ANY WARRANTY; without even the implied warranty of  
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// This file is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License  
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file incorporates work covered by the following copyright and  
+// This file incorporates work covered by the following copyright and
 // permission notice:
 //
 //   Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>
@@ -53,7 +53,9 @@
 
 #include <stdarg.h>
 
+#ifndef BUILD_LIB
 static int verbose_device_search(char *s);
+#endif
 
 //
 // ============================= Utility functions ==========================
@@ -79,8 +81,11 @@ static void log_with_timestamp(const char *format, ...)
     va_end(ap);
     msg[1023] = 0;
 
-    fprintf(stderr, "%s  %s\n", timebuf, msg);
+    FPRINTF(stderr, "%s  %s\n", timebuf, msg);
 }
+
+
+#ifndef BUILD_LIB
 
 static void sigintHandler(int dummy) {
     MODES_NOTUSED(dummy);
@@ -95,25 +100,28 @@ static void sigtermHandler(int dummy) {
     Modes.exit = 1;           // Signal to threads that we are done
     log_with_timestamp("Caught SIGTERM, shutting down..\n");
 }
+
+#endif /* #ifndef BUILD_LIB */
+
 //
 // =============================== Terminal handling ========================
 //
 #ifndef _WIN32
 // Get the number of rows after the terminal changes size.
-int getTermRows() { 
-    struct winsize w; 
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w); 
-    return (w.ws_row); 
-} 
+int getTermRows() {
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    return (w.ws_row);
+}
 
 // Handle resizing terminal
 void sigWinchCallback() {
     signal(SIGWINCH, SIG_IGN);
     Modes.interactive_rows = getTermRows();
     interactiveShowData();
-    signal(SIGWINCH, sigWinchCallback); 
+    signal(SIGWINCH, sigWinchCallback);
 }
-#else 
+#else
 int getTermRows() { return MODES_INTERACTIVE_ROWS;}
 #endif
 
@@ -179,13 +187,13 @@ void modesInit(void) {
     if ( ((Modes.maglut     = (uint16_t *) malloc(sizeof(uint16_t) * 256 * 256)                                 ) == NULL) ||
          ((Modes.log10lut   = (uint16_t *) malloc(sizeof(uint16_t) * 256 * 256)                                 ) == NULL) )
     {
-        fprintf(stderr, "Out of memory allocating data buffer.\n");
+        FPRINTF(stderr, "Out of memory allocating data buffer.\n");
         exit(1);
     }
 
     for (i = 0; i < MODES_MAG_BUFFERS; ++i) {
         if ( (Modes.mag_buffers[i].data = calloc(MODES_MAG_BUF_SAMPLES+Modes.trailing_samples, sizeof(uint16_t))) == NULL ) {
-            fprintf(stderr, "Out of memory allocating magnitude buffer.\n");
+            FPRINTF(stderr, "Out of memory allocating magnitude buffer.\n");
             exit(1);
         }
 
@@ -196,24 +204,24 @@ void modesInit(void) {
 
     // Validate the users Lat/Lon home location inputs
     if ( (Modes.fUserLat >   90.0)  // Latitude must be -90 to +90
-      || (Modes.fUserLat <  -90.0)  // and 
+      || (Modes.fUserLat <  -90.0)  // and
       || (Modes.fUserLon >  360.0)  // Longitude must be -180 to +360
       || (Modes.fUserLon < -180.0) ) {
         Modes.fUserLat = Modes.fUserLon = 0.0;
     } else if (Modes.fUserLon > 180.0) { // If Longitude is +180 to +360, make it -180 to 0
         Modes.fUserLon -= 360.0;
     }
-    // If both Lat and Lon are 0.0 then the users location is either invalid/not-set, or (s)he's in the 
-    // Atlantic ocean off the west coast of Africa. This is unlikely to be correct. 
-    // Set the user LatLon valid flag only if either Lat or Lon are non zero. Note the Greenwich meridian 
-    // is at 0.0 Lon,so we must check for either fLat or fLon being non zero not both. 
+    // If both Lat and Lon are 0.0 then the users location is either invalid/not-set, or (s)he's in the
+    // Atlantic ocean off the west coast of Africa. This is unlikely to be correct.
+    // Set the user LatLon valid flag only if either Lat or Lon are non zero. Note the Greenwich meridian
+    // is at 0.0 Lon,so we must check for either fLat or fLon being non zero not both.
     // Testing the flag at runtime will be much quicker than ((fLon != 0.0) || (fLat != 0.0))
     Modes.bUserFlags &= ~MODES_USER_LATLON_VALID;
     if ((Modes.fUserLat != 0.0) || (Modes.fUserLon != 0.0)) {
         Modes.bUserFlags |= MODES_USER_LATLON_VALID;
     }
 
-    // Limit the maximum requested raw output size to less than one Ethernet Block 
+    // Limit the maximum requested raw output size to less than one Ethernet Block
     if (Modes.net_output_flush_size > (MODES_OUT_FLUSH_SIZE))
       {Modes.net_output_flush_size = MODES_OUT_FLUSH_SIZE;}
     if (Modes.net_output_flush_interval > (MODES_OUT_FLUSH_INTERVAL))
@@ -260,7 +268,7 @@ void modesInit(void) {
                                                   Modes.measure_noise, /* total power is interesting if we want noise */
                                                   &Modes.converter_state);
         if (!Modes.converter_function) {
-            fprintf(stderr, "Can't initialize sample converter, giving up.\n");
+            FPRINTF(stderr, "Can't initialize sample converter, giving up.\n");
             exit(1);
         }
     }
@@ -277,7 +285,13 @@ static void convert_samples(void *iq,
 //
 // =============================== RTLSDR handling ==========================
 //
+
+#ifdef BUILD_LIB
+int dev_index;
+#endif
 int modesInitRTLSDR(void) {
+#ifndef BUILD_LIB
+
     int j;
     int device_count, dev_index = 0;
     char vendor[256], product[256], serial[256];
@@ -289,22 +303,24 @@ int modesInitRTLSDR(void) {
 
     device_count = rtlsdr_get_device_count();
     if (!device_count) {
-        fprintf(stderr, "No supported RTLSDR devices found.\n");
+        FPRINTF(stderr, "No supported RTLSDR devices found.\n");
         return -1;
     }
 
-    fprintf(stderr, "Found %d device(s):\n", device_count);
+    FPRINTF(stderr, "Found %d device(s):\n", device_count);
     for (j = 0; j < device_count; j++) {
         if (rtlsdr_get_device_usb_strings(j, vendor, product, serial) != 0) {
-            fprintf(stderr, "%d: unable to read device details\n", j);
+            FPRINTF(stderr, "%d: unable to read device details\n", j);
         } else {
-            fprintf(stderr, "%d: %s, %s, SN: %s %s\n", j, vendor, product, serial,
+            FPRINTF(stderr, "%d: %s, %s, SN: %s %s\n", j, vendor, product, serial,
                     (j == dev_index) ? "(currently selected)" : "");
         }
     }
 
+#endif /* #ifndef BUILD_LIB */
+
     if (rtlsdr_open(&Modes.dev, dev_index) < 0) {
-        fprintf(stderr, "Error opening the RTLSDR device: %s\n",
+        FPRINTF(stderr, "Error opening the RTLSDR device: %s\n",
             strerror(errno));
         return -1;
     }
@@ -318,17 +334,17 @@ int modesInitRTLSDR(void) {
 
         numgains = rtlsdr_get_tuner_gains(Modes.dev, NULL);
         if (numgains <= 0) {
-            fprintf(stderr, "Error getting tuner gains\n");
+            FPRINTF(stderr, "Error getting tuner gains\n");
             return -1;
         }
 
         gains = malloc(numgains * sizeof(int));
         if (rtlsdr_get_tuner_gains(Modes.dev, gains) != numgains) {
-            fprintf(stderr, "Error getting tuner gains\n");
+            FPRINTF(stderr, "Error getting tuner gains\n");
             free(gains);
             return -1;
         }
-        
+
         if (Modes.gain == MODES_MAX_GAIN) {
             int highest = -1;
             int i;
@@ -339,7 +355,7 @@ int modesInitRTLSDR(void) {
             }
 
             Modes.gain = highest;
-            fprintf(stderr, "Max available gain is: %.2f dB\n", Modes.gain/10.0);
+            FPRINTF(stderr, "Max available gain is: %.2f dB\n", Modes.gain/10.0);
         } else {
             int closest = -1;
             int i;
@@ -351,19 +367,19 @@ int modesInitRTLSDR(void) {
 
             if (closest != Modes.gain) {
                 Modes.gain = closest;
-                fprintf(stderr, "Closest available gain: %.2f dB\n", Modes.gain/10.0);
+                FPRINTF(stderr, "Closest available gain: %.2f dB\n", Modes.gain/10.0);
             }
         }
 
         free(gains);
 
-        fprintf(stderr, "Setting gain to: %.2f dB\n", Modes.gain/10.0);
+        FPRINTF(stderr, "Setting gain to: %.2f dB\n", Modes.gain/10.0);
         if (rtlsdr_set_tuner_gain(Modes.dev, Modes.gain) < 0) {
-            fprintf(stderr, "Error setting tuner gains\n");
+            FPRINTF(stderr, "Error setting tuner gains\n");
             return -1;
         }
     } else {
-        fprintf(stderr, "Using automatic gain control.\n");
+        FPRINTF(stderr, "Using automatic gain control.\n");
     }
     rtlsdr_set_freq_correction(Modes.dev, Modes.ppm_error);
     if (Modes.enable_agc) rtlsdr_set_agc_mode(Modes.dev, 1);
@@ -371,7 +387,7 @@ int modesInitRTLSDR(void) {
     rtlsdr_set_sample_rate(Modes.dev, (unsigned)Modes.sample_rate);
 
     rtlsdr_reset_buffer(Modes.dev);
-    fprintf(stderr, "Gain reported by device: %.2f dB\n",
+    FPRINTF(stderr, "Gain reported by device: %.2f dB\n",
         rtlsdr_get_tuner_gain(Modes.dev)/10.0);
 
     return 0;
@@ -417,7 +433,7 @@ void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx) {
     // Paranoia! Unlikely, but let's go for belt and suspenders here
 
     if (len != MODES_RTL_BUF_SIZE) {
-        fprintf(stderr, "weirdness: rtlsdr gave us a block with an unusual size (got %u bytes, expected %u bytes)\n",
+        FPRINTF(stderr, "weirdness: rtlsdr gave us a block with an unusual size (got %u bytes, expected %u bytes)\n",
                 (unsigned)len, (unsigned)MODES_RTL_BUF_SIZE);
 
         if (len > MODES_RTL_BUF_SIZE) {
@@ -507,7 +523,7 @@ void readDataFromFile(void) {
     }
 
     if (!(readbuf = malloc(MODES_MAG_BUF_SAMPLES * bytes_per_sample))) {
-        fprintf(stderr, "failed to allocate read buffer\n");
+        FPRINTF(stderr, "failed to allocate read buffer\n");
         exit(1);
     }
 
@@ -766,7 +782,7 @@ void backgroundTasks(void) {
 
     if (Modes.net) {
 	modesNetPeriodicWork();
-    }    
+    }
 
 
     // Refresh screen when in interactive mode
@@ -785,21 +801,21 @@ void backgroundTasks(void) {
         } else {
             Modes.stats_latest_1min = (Modes.stats_latest_1min + 1) % 15;
             Modes.stats_1min[Modes.stats_latest_1min] = Modes.stats_current;
-            
+
             add_stats(&Modes.stats_current, &Modes.stats_alltime, &Modes.stats_alltime);
             add_stats(&Modes.stats_current, &Modes.stats_periodic, &Modes.stats_periodic);
-            
+
             reset_stats(&Modes.stats_5min);
             for (i = 0; i < 5; ++i)
                 add_stats(&Modes.stats_1min[(Modes.stats_latest_1min - i + 15) % 15], &Modes.stats_5min, &Modes.stats_5min);
-            
+
             reset_stats(&Modes.stats_15min);
             for (i = 0; i < 15; ++i)
                 add_stats(&Modes.stats_1min[i], &Modes.stats_15min, &Modes.stats_15min);
-            
+
             reset_stats(&Modes.stats_current);
             Modes.stats_current.start = Modes.stats_current.end = now;
-            
+
             if (Modes.json_dir)
                 writeJsonToFile("stats.json", generateStatsJson);
 
@@ -853,6 +869,9 @@ void backgroundTasks(void) {
 //
 //=========================================================================
 //
+
+#ifndef BUILD_LIB
+
 int verbose_device_search(char *s)
 {
 	int i, device_count, device, offset;
@@ -860,22 +879,22 @@ int verbose_device_search(char *s)
 	char vendor[256], product[256], serial[256];
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
-		fprintf(stderr, "No supported devices found.\n");
+		FPRINTF(stderr, "No supported devices found.\n");
 		return -1;
 	}
-	fprintf(stderr, "Found %d device(s):\n", device_count);
+	FPRINTF(stderr, "Found %d device(s):\n", device_count);
 	for (i = 0; i < device_count; i++) {
             if (rtlsdr_get_device_usb_strings(i, vendor, product, serial) != 0) {
-                fprintf(stderr, "  %d:  unable to read device details\n", i);
+                FPRINTF(stderr, "  %d:  unable to read device details\n", i);
             } else {
-                fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+                FPRINTF(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
             }
 	}
-	fprintf(stderr, "\n");
+	FPRINTF(stderr, "\n");
 	/* does string look like raw id number */
 	device = (int)strtol(s, &s2, 0);
 	if (s2[0] == '\0' && device >= 0 && device < device_count) {
-		fprintf(stderr, "Using device %d: %s\n",
+		FPRINTF(stderr, "Using device %d: %s\n",
 			device, rtlsdr_get_device_name((uint32_t)device));
 		return device;
 	}
@@ -885,7 +904,7 @@ int verbose_device_search(char *s)
 		if (strcmp(s, serial) != 0) {
 			continue;}
 		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
+		FPRINTF(stderr, "Using device %d: %s\n",
 			device, rtlsdr_get_device_name((uint32_t)device));
 		return device;
 	}
@@ -895,7 +914,7 @@ int verbose_device_search(char *s)
 		if (strncmp(s, serial, strlen(s)) != 0) {
 			continue;}
 		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
+		FPRINTF(stderr, "Using device %d: %s\n",
 			device, rtlsdr_get_device_name((uint32_t)device));
 		return device;
 	}
@@ -908,16 +927,39 @@ int verbose_device_search(char *s)
 		if (strncmp(s, serial+offset, strlen(s)) != 0) {
 			continue;}
 		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
+		FPRINTF(stderr, "Using device %d: %s\n",
 			device, rtlsdr_get_device_name((uint32_t)device));
 		return device;
 	}
-	fprintf(stderr, "No matching devices found.\n");
+	FPRINTF(stderr, "No matching devices found.\n");
 	return -1;
 }
+
+#endif /* #ifndef BUILD_LIB */
+
 //
 //=========================================================================
 //
+
+#ifdef BUILD_LIB
+
+static char dev_name[12];
+static int ppm_error;
+static pthread_t main_thread;
+static void *start_main(void *x) {
+    MODES_NOTUSED(x);
+    
+    int j;
+    modesInitConfig();
+    
+    // "--oversample --net --device-index X --ppm Y
+    Modes.dev_name = dev_name;
+    Modes.oversample = 1;
+    Modes.net = 1;
+    Modes.ppm_error = ppm_error;
+
+#else
+
 int main(int argc, char **argv) {
     int j;
 
@@ -951,7 +993,7 @@ int main(int argc, char **argv) {
             } else if (!strcasecmp(argv[j], "sc16q11")) {
                 Modes.input_format = INPUT_SC16Q11;
             } else {
-                fprintf(stderr, "Input format '%s' not understood (supported values: UC8, SC16, SC16Q11)\n",
+                FPRINTF(stderr, "Input format '%s' not understood (supported values: UC8, SC16, SC16Q11)\n",
                         argv[j]);
                 exit(1);
             }
@@ -974,7 +1016,7 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[j],"--modeac")) {
             Modes.mode_ac = 1;
         } else if (!strcmp(argv[j],"--net-beast")) {
-            fprintf(stderr, "--net-beast ignored, use --net-bo-port to control where Beast output is generated\n");
+            FPRINTF(stderr, "--net-beast ignored, use --net-bo-port to control where Beast output is generated\n");
         } else if (!strcmp(argv[j],"--net-only")) {
             Modes.net = 1;
             Modes.net_only = 1;
@@ -1026,7 +1068,7 @@ int main(int argc, char **argv) {
 #ifdef ALLOW_AGGRESSIVE
             Modes.nfix_crc = MODES_MAX_BITERRORS;
 #else
-            fprintf(stderr, "warning: --aggressive not supported in this build, option ignored.\n");
+            FPRINTF(stderr, "warning: --aggressive not supported in this build, option ignored.\n");
 #endif
         } else if (!strcmp(argv[j],"--interactive")) {
             Modes.interactive = Modes.throttle = 1;
@@ -1054,7 +1096,7 @@ int main(int argc, char **argv) {
                 case 'n': Modes.debug |= MODES_DEBUG_NET; break;
                 case 'j': Modes.debug |= MODES_DEBUG_JS; break;
                 default:
-                    fprintf(stderr, "Unknown debugging flag: %c\n", *f);
+                    FPRINTF(stderr, "Unknown debugging flag: %c\n", *f);
                     exit(1);
                     break;
                 }
@@ -1099,13 +1141,15 @@ int main(int argc, char **argv) {
             Modes.json_location_accuracy = atoi(argv[++j]);
 #endif
         } else {
-            fprintf(stderr,
+            FPRINTF(stderr,
                 "Unknown or not enough arguments for option '%s'.\n\n",
                 argv[j]);
             showHelp();
             exit(1);
         }
     }
+
+#endif /* #ifdef BUILD_LIB */
 
 #ifdef _WIN32
     // Try to comply with the Copyright license conditions for binary distribution
@@ -1122,7 +1166,7 @@ int main(int argc, char **argv) {
     modesInit();
 
     if (Modes.net_only) {
-        fprintf(stderr,"Net-only mode, no RTL device or file open.\n");
+        FPRINTF(stderr,"Net-only mode, no RTL device or file open.\n");
     } else if (Modes.filename == NULL) {
         if (modesInitRTLSDR() < 0) {
             exit(1);
@@ -1263,6 +1307,33 @@ int main(int argc, char **argv) {
     return (0);
 #endif
 }
+
+#ifdef BUILD_LIB
+
+void stratuxLog(char *fmt, ...) {
+    char output[256] = {}; // more space?
+    va_list argp;
+    va_start(argp, fmt);
+    vsprintf(output, fmt, argp);
+    va_end(argp);
+    log1090(output); // the exported Go function
+}
+
+int start1090(int indexID, int ppm) {
+    sprintf(dev_name, "%d", indexID);
+    dev_index = indexID;
+    ppm_error = ppm;
+    return pthread_create(&main_thread, NULL, start_main, NULL);
+}
+
+void stop1090(void) {
+    stratuxLog("Dump1090Stop called, shutting down..\n");
+    Modes.exit = 1;  // Signal to threads that we are done
+    pthread_join(main_thread, NULL);    // Wait on the main thread to exit
+}
+
+#endif /* #ifdef BUILD_LIB */
+
 //
 //=========================================================================
 //

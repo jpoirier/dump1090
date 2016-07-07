@@ -4,20 +4,20 @@
 //
 // Copyright (c) 2014,2015 Oliver Jowett <oliver@mutability.co.uk>
 //
-// This file is free software: you may copy, redistribute and/or modify it  
+// This file is free software: you may copy, redistribute and/or modify it
 // under the terms of the GNU General Public License as published by the
-// Free Software Foundation, either version 2 of the License, or (at your  
-// option) any later version.  
+// Free Software Foundation, either version 2 of the License, or (at your
+// option) any later version.
 //
-// This file is distributed in the hope that it will be useful, but  
-// WITHOUT ANY WARRANTY; without even the implied warranty of  
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// This file is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License  
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file incorporates work covered by the following copyright and  
+// This file incorporates work covered by the following copyright and
 // permission notice:
 //
 //   Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>
@@ -55,8 +55,8 @@
 // ===================== Mode A/C detection and decoding  ===================
 //
 //
-// This table is used to build the Mode A/C variable called ModeABits.Each 
-// bit period is inspected, and if it's value exceeds the threshold limit, 
+// This table is used to build the Mode A/C variable called ModeABits.Each
+// bit period is inspected, and if it's value exceeds the threshold limit,
 // then the value in this table is or-ed into ModeABits.
 //
 // At the end of message processing, ModeABits will be the decoded ModeA value.
@@ -69,12 +69,12 @@ uint32_t ModeABitTable[24] = {
 0x00000000, // F1 = 1
 0x00000010, // C1
 0x00001000, // A1
-0x00000020, // C2 
+0x00000020, // C2
 0x00002000, // A2
 0x00000040, // C4
 0x00004000, // A4
 0x40000000, // xx = 0  Set bit 30 if we see this high
-0x00000100, // B1 
+0x00000100, // B1
 0x00000001, // D1
 0x00000200, // B2
 0x00000002, // D2
@@ -92,12 +92,12 @@ uint32_t ModeABitTable[24] = {
 0x00100000, // xx = 0  Set bit 20 if we see this high
 };
 //
-// This table is used to produce an error variable called ModeAErrs.Each 
-// inter-bit period is inspected, and if it's value falls outside of the 
+// This table is used to produce an error variable called ModeAErrs.Each
+// inter-bit period is inspected, and if it's value falls outside of the
 // expected range, then the value in this table is or-ed into ModeAErrs.
 //
-// At the end of message processing, ModeAErrs will indicate if we saw 
-// any inter-bit anomolies, and the bits that are set will show which 
+// At the end of message processing, ModeAErrs will indicate if we saw
+// any inter-bit anomolies, and the bits that are set will show which
 // bits had them.
 //
 uint32_t ModeAMidTable[24] = {
@@ -131,36 +131,36 @@ uint32_t ModeAMidTable[24] = {
 // _F1_C1_A1_C2_A2_C4_A4_xx_B1_D1_B2_D2_B4_D4_F2_xx_xx_SPI_
 //
 // Bit spacing is 1.45uS, with 0.45uS high, and 1.00us low. This is a problem
-// because we ase sampling at 2Mhz (500nS) so we are below Nyquist. 
+// because we ase sampling at 2Mhz (500nS) so we are below Nyquist.
 //
 // The bit spacings are..
-// F1 :  0.00,   
-//       1.45,  2.90,  4.35,  5.80,  7.25,  8.70, 
-// X  : 10.15, 
-//    : 11.60, 13.05, 14.50, 15.95, 17.40, 18.85, 
-// F2 : 20.30, 
-// X  : 21.75, 23.20, 24.65 
+// F1 :  0.00,
+//       1.45,  2.90,  4.35,  5.80,  7.25,  8.70,
+// X  : 10.15,
+//    : 11.60, 13.05, 14.50, 15.95, 17.40, 18.85,
+// F2 : 20.30,
+// X  : 21.75, 23.20, 24.65
 //
 // This equates to the following sample point centers at 2Mhz.
-// [ 0.0], 
-// [ 2.9], [ 5.8], [ 8.7], [11.6], [14.5], [17.4], 
-// [20.3], 
+// [ 0.0],
+// [ 2.9], [ 5.8], [ 8.7], [11.6], [14.5], [17.4],
+// [20.3],
 // [23.2], [26.1], [29.0], [31.9], [34.8], [37.7]
 // [40.6]
 // [43.5], [46.4], [49.3]
 //
 // We know that this is a supposed to be a binary stream, so the signal
-// should either be a 1 or a 0. Therefore, any energy above the noise level 
-// in two adjacent samples must be from the same pulse, so we can simply 
-// add the values together.. 
-// 
+// should either be a 1 or a 0. Therefore, any energy above the noise level
+// in two adjacent samples must be from the same pulse, so we can simply
+// add the values together..
+//
 int detectModeA(uint16_t *m, struct modesMessage *mm)
   {
   int j, lastBitWasOne;
   int ModeABits = 0;
   int ModeAErrs = 0;
   int byte, bit;
-  int thisSample, lastBit, lastSpace = 0; 
+  int thisSample, lastBit, lastSpace = 0;
   int m0, m1, m2, m3, mPhase;
   int n0, n1, n2 ,n3;
   int F1_sig, F1_noise;
@@ -177,15 +177,15 @@ int detectModeA(uint16_t *m, struct modesMessage *mm)
   //
   // The width of the frame bit is 450nS, which is 90% of our sample rate.
   // Therefore, in an ideal world, all the energy for the frame bit will be
-  // in a single sample, preceeded by (at least) one zero, and followed by 
+  // in a single sample, preceeded by (at least) one zero, and followed by
   // two zeros, Best case we can look for ...
   //
   // 0 - 1 - 0 - 0
   //
-  // However, our samples are not phase aligned, so some of the energy from 
+  // However, our samples are not phase aligned, so some of the energy from
   // each bit could be spread over two consecutive samples. Worst case is
-  // that we sample half in one bit, and half in the next. In that case, 
-  // we're looking for 
+  // that we sample half in one bit, and half in the next. In that case,
+  // we're looking for
   //
   // 0 - 0.5 - 0.5 - 0.
 
@@ -196,8 +196,8 @@ int detectModeA(uint16_t *m, struct modesMessage *mm)
 
   m2 = m[2]; m3 = m[3];
 
-  // 
-  // if (m2 <= m0), then assume the sample bob on (Phase == 0), so don't look at m3 
+  //
+  // if (m2 <= m0), then assume the sample bob on (Phase == 0), so don't look at m3
   if ((m2 <= m0) || (m2 < m3))
     {m3 = m2; m2 = m0;}
 
@@ -211,7 +211,7 @@ int detectModeA(uint16_t *m, struct modesMessage *mm)
   // m2 = noise + (signal * (1-X))
   // m3 = noise
   //
-  // Hence, assuming all 4 samples have similar amounts of noise in them 
+  // Hence, assuming all 4 samples have similar amounts of noise in them
   //      signal = (m1 + m2) - ((m0 + m3) * 2)
   //      noise  = (m0 + m3) / 2
   //
@@ -224,19 +224,19 @@ int detectModeA(uint16_t *m, struct modesMessage *mm)
 
   // If we get here then we have a potential F1, so look for an equally valid F2 20.3uS later
   //
-  // Our F1 is centered somewhere between samples m[1] and m[2]. We can guestimate where F2 is 
+  // Our F1 is centered somewhere between samples m[1] and m[2]. We can guestimate where F2 is
   // by comparing the ratio of m1 and m2, and adding on 20.3 uS (40.6 samples)
   //
   mPhase = ((m2 * 20) / (m1 + m2));
-  byte   = (mPhase + 812) / 20; 
-  n0     = m[byte++]; n1 = m[byte++]; 
+  byte   = (mPhase + 812) / 20;
+  n0     = m[byte++]; n1 = m[byte++];
 
   if (n0 >= n1)   // n1 *must* be bigger than n0 for this to be F2
     {return (0);}
 
   n2 = m[byte++];
-  // 
-  // if the sample bob on (Phase == 0), don't look at n3 
+  //
+  // if the sample bob on (Phase == 0), don't look at n3
   //
   if ((mPhase + 812) % 20)
     {n3 = m[byte++];}
@@ -269,16 +269,16 @@ int detectModeA(uint16_t *m, struct modesMessage *mm)
   for (j = 1, mPhase += 29; j < 48; mPhase += 29, j ++)
     {
     byte  = 1 + (mPhase / 20);
-    
+
     thisSample = m[byte] - fNoise;
     if (mPhase % 20)                     // If the bit is split over two samples...
       {thisSample += (m[byte+1] - fNoise);}  //    add in the second sample's energy
 
      // If we're calculating a space value
-    if (j & 1)               
+    if (j & 1)
       {lastSpace = thisSample;}
 
-    else 
+    else
       {// We're calculating a new bit value
       bit = j >> 1;
       if (thisSample >= fLevel)
@@ -291,7 +291,7 @@ int detectModeA(uint16_t *m, struct modesMessage *mm)
             {ModeAErrs |= ModeAMidTable[bit];}
           }
 
-        else              
+        else
           {// This bit,is one, last bit was zero, so check the last space is somewhere less than one
           if (lastSpace >= (thisSample >> 1))
             {ModeAErrs |= ModeAMidTable[bit];}
@@ -300,8 +300,8 @@ int detectModeA(uint16_t *m, struct modesMessage *mm)
         lastBitWasOne = 1;
         }
 
-      
-      else 
+
+      else
         {// We're calculating a new bit value, and its a zero
         if (lastBitWasOne)
           { // This bit is zero, last bit was one, so check the last space is somewhere in between
@@ -309,16 +309,16 @@ int detectModeA(uint16_t *m, struct modesMessage *mm)
             {ModeAErrs |= ModeAMidTable[bit];}
           }
 
-        else              
+        else
           {// This bit,is zero, last bit was zero, so check the last space is zero too
           if (lastSpace >= fLoLo)
             {ModeAErrs |= ModeAMidTable[bit];}
           }
 
-        lastBitWasOne = 0;   
+        lastBitWasOne = 0;
         }
 
-      lastBit = (thisSample >> 1); 
+      lastBit = (thisSample >> 1);
       }
     }
 
@@ -400,22 +400,22 @@ static void dumpRawMessageJS(char *descr, unsigned char *msg,
     int j;
 
     if ((fp = fopen("frames.js","a")) == NULL) {
-        fprintf(stderr, "Error opening frames.js: %s\n", strerror(errno));
+        FPRINTF(stderr, "Error opening frames.js: %s\n", strerror(errno));
         exit(1);
     }
 
-    fprintf(fp,"frames.push({\"descr\": \"%s\", \"mag\": [", descr);
+    FPRINTF(fp,"frames.push({\"descr\": \"%s\", \"mag\": [", descr);
     for (j = start; j <= end; j++) {
-        fprintf(fp,"%d", j < 0 ? 0 : m[j]);
-        if (j != end) fprintf(fp,",");
+        FPRINTF(fp,"%d", j < 0 ? 0 : m[j]);
+        if (j != end) FPRINTF(fp,",");
     }
-    fprintf(fp, "], ");
+    FPRINTF(fp, "], ");
     for (j = 0; j < MODES_MAX_BITERRORS; ++j)
-        fprintf(fp,"\"fix%d\": %d, ", j, ei->bit[j]);
-    fprintf(fp, "\"bits\": %d, \"hex\": \"", modesMessageLenByType(msg[0]>>3));
+        FPRINTF(fp,"\"fix%d\": %d, ", j, ei->bit[j]);
+    FPRINTF(fp, "\"bits\": %d, \"hex\": \"", modesMessageLenByType(msg[0]>>3));
     for (j = 0; j < MODES_LONG_MSG_BYTES; j++)
-        fprintf(fp,"\\x%02x",msg[j]);
-    fprintf(fp,"\"});\n");
+        FPRINTF(fp,"\\x%02x",msg[j]);
+    FPRINTF(fp,"\"});\n");
     fclose(fp);
 }
 //
@@ -578,7 +578,7 @@ void demodulate2000(struct mag_buf *mag) {
     // 1.0 - 1.5 usec: second impulse.
     // 3.5 - 4   usec: third impulse.
     // 4.5 - 5   usec: last impulse.
-    // 
+    //
     // Since we are sampling at 2 Mhz every sample in our magnitude vector
     // is 0.5 usec, so the preamble will look like this, assuming there is
     // an impulse at offset 0 in the array:
@@ -595,7 +595,7 @@ void demodulate2000(struct mag_buf *mag) {
     // 9   -------------------
     //
     for (j = 0; j < mlen; j++) {
-        int high, i, errors, errors56, errorsTy; 
+        int high, i, errors, errors56, errorsTy;
         uint16_t *pPreamble, *pPayload, *pPtr;
         uint8_t  theByte, theErrs;
         int msglen, scanlen;
@@ -615,11 +615,11 @@ void demodulate2000(struct mag_buf *mag) {
         if (!use_correction)  // This is not a re-try with phase correction
             {                 // so try to find a new preamble
 
-            if (Modes.mode_ac) 
+            if (Modes.mode_ac)
                 {
                 int ModeA = detectModeA(pPreamble, &mm);
 
-                if (ModeA) // We have found a valid ModeA/C in the data                    
+                if (ModeA) // We have found a valid ModeA/C in the data
                     {
                     mm.timestampMsg = mag->sampleTimestamp + ((j+1) * 6);
 
@@ -688,7 +688,7 @@ void demodulate2000(struct mag_buf *mag) {
                 continue;
             }
             Modes.stats_current.demod_preambles++;
-        } 
+        }
 
         else {
             // If the previous attempt with this message failed, retry using
@@ -708,8 +708,8 @@ void demodulate2000(struct mag_buf *mag) {
         theErrs = 0; errorsTy = 0;
         errors  = 0; errors56 = 0;
 
-        // We should have 4 'bits' of 0/1 and 1/0 samples in the preamble, 
-        // so include these in the signal strength 
+        // We should have 4 'bits' of 0/1 and 1/0 samples in the preamble,
+        // so include these in the signal strength
         sigLevel = pPreamble[0] + pPreamble[2] + pPreamble[7] + pPreamble[9];
         noiseLevel = pPreamble[1] + pPreamble[3] + pPreamble[4] + pPreamble[6] + pPreamble[8];
 
@@ -718,9 +718,9 @@ void demodulate2000(struct mag_buf *mag) {
             uint32_t a = *pPtr++;
             uint32_t b = *pPtr++;
 
-            if      (a > b) 
+            if      (a > b)
                 {theByte |= 1; if (i < 56) { sigLevel += a; noiseLevel += b; }}
-            else if (a < b) 
+            else if (a < b)
                 {/*theByte |= 0;*/ if (i < 56) { sigLevel += b; noiseLevel += a; }}
             else {
                 if (i < 56) { sigLevel += a; noiseLevel += a; }
@@ -734,7 +734,7 @@ void demodulate2000(struct mag_buf *mag) {
                     {errorsTy = errors56 = ++errors; theErrs |= 1; theByte |= 1;}
             }
 
-            if ((i & 7) == 7) 
+            if ((i & 7) == 7)
               {*pMsg++ = theByte;}
             else if (i == 4) {
               msglen  = modesMessageLenByType(theByte);
@@ -753,12 +753,12 @@ void demodulate2000(struct mag_buf *mag) {
                     msglen = 0;
 
                 } else if ((errorsTy == 1) && (theErrs == 0x80)) {
-                    // If we only saw one error in the first bit of the byte of the frame, then it's possible 
+                    // If we only saw one error in the first bit of the byte of the frame, then it's possible
                     // we guessed wrongly about the value of the bit. We may be able to correct it by guessing
                     // the other way.
                     //
                     // We guessed a '1' at bit 7, which is the DF length bit == 112 Bits.
-                    // Inverting bit 7 will change the message type from a long to a short. 
+                    // Inverting bit 7 will change the message type from a long to a short.
                     // Invert the bit, cross your fingers and carry on.
                     msglen  = MODES_SHORT_MSG_BITS;
                     msg[0] ^= theErrs; errorsTy = 0;
@@ -789,20 +789,20 @@ void demodulate2000(struct mag_buf *mag) {
         // message types. If it isn't then toggle the guessed bit and see if this new value is ICAO defined.
         // if the new value is ICAO defined, then update it in our message.
         if ((msglen) && (errorsTy == 1) && (theErrs & 0x78)) {
-            // We guessed at one (and only one) of the message type bits. See if our guess is "likely" 
+            // We guessed at one (and only one) of the message type bits. See if our guess is "likely"
             // to be correct by comparing the DF against a list of known good DF's
             int      thisDF      = ((theByte = msg[0]) >> 3) & 0x1f;
             uint32_t validDFbits = 0x017F0831;   // One bit per 32 possible DF's. Set bits 0,4,5,11,16.17.18.19,20,21,22,24
             uint32_t thisDFbit   = (1 << thisDF);
             if (0 == (validDFbits & thisDFbit)) {
-                // The current DF is not ICAO defined, so is probably an errors. 
+                // The current DF is not ICAO defined, so is probably an errors.
                 // Toggle the bit we guessed at and see if the resultant DF is more likely
                 theByte  ^= theErrs;
                 thisDF    = (theByte >> 3) & 0x1f;
                 thisDFbit = (1 << thisDF);
                 // if this DF any more likely?
                 if (validDFbits & thisDFbit) {
-                    // Yep, more likely, so update the main message 
+                    // Yep, more likely, so update the main message
                     msg[0] = theByte;
                     errors--; // decrease the error count so we attempt to use the modified DF.
                 }
@@ -819,9 +819,9 @@ void demodulate2000(struct mag_buf *mag) {
         snr = Modes.log10lut[sigLevel] - Modes.log10lut[noiseLevel];
 
         // When we reach this point, if error is small, and the signal strength is large enough
-        // we may have a Mode S message on our hands. It may still be broken and the CRC may not 
+        // we may have a Mode S message on our hands. It may still be broken and the CRC may not
         // be correct, but this can be handled by the next layer.
-        if ( (msglen) 
+        if ( (msglen)
           && ((2 * snr) > (int) (MODES_MSG_SQUELCH_DB * 10))
           && (errors      <= MODES_MSG_ENCODER_ERRS) ) {
             int result;
@@ -860,7 +860,7 @@ void demodulate2000(struct mag_buf *mag) {
                          (!message_ok || mm.correctedbits > 0))
                     dumpRawMessage("Decoded with bad CRC", msg, m, j);
                 else if (Modes.debug & MODES_DEBUG_GOODCRC &&
-                         message_ok && 
+                         message_ok &&
                          mm.correctedbits == 0)
                     dumpRawMessage("Decoded with good CRC", msg, m, j);
             }
@@ -884,7 +884,7 @@ void demodulate2000(struct mag_buf *mag) {
         if (Modes.phase_enhance && (!message_ok || mm.correctedbits > 0) && !use_correction && j && detectOutOfPhase(pPreamble)) {
             use_correction = 1; j--;
         } else {
-            use_correction = 0; 
+            use_correction = 0;
         }
     }
 }

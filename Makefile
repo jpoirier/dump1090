@@ -41,6 +41,10 @@ all: dump1090 view1090
 %.o: %.c *.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(EXTRACFLAGS) -c $< -o $@
 
+lib:
+	$(CC) -c -fpic -DBUILD_LIB=1 $(CPPFLAGS) $(CFLAGS) $(EXTRACFLAGS) dump1090.c anet.c interactive.c mode_ac.c mode_s.c net_io.c crc.c demod_2000.c demod_2400.c stats.c cpr.c icao_filter.c track.c util.c convert.c
+	$(CC) -shared -lm  -o ../libdump1090.so $(LIBS) $(LIBS_RTL) $(LDFLAGS) dump1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o crc.o demod_2000.o demod_2400.o stats.o cpr.o icao_filter.o track.o util.o convert.o 
+	
 dump1090.o: CFLAGS += `pkg-config --cflags librtlsdr`
 
 dump1090: dump1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o crc.o demod_2000.o demod_2400.o stats.o cpr.o icao_filter.o track.o util.o convert.o $(COMPAT)

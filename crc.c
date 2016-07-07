@@ -4,17 +4,17 @@
 //
 // Copyright (c) 2014,2015 Oliver Jowett <oliver@mutability.co.uk>
 //
-// This file is free software: you may copy, redistribute and/or modify it  
+// This file is free software: you may copy, redistribute and/or modify it
 // under the terms of the GNU General Public License as published by the
-// Free Software Foundation, either version 2 of the License, or (at your  
-// option) any later version.  
+// Free Software Foundation, either version 2 of the License, or (at your
+// option) any later version.
 //
-// This file is distributed in the hope that it will be useful, but  
-// WITHOUT ANY WARRANTY; without even the implied warranty of  
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// This file is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License  
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "dump1090.h"
@@ -40,7 +40,7 @@ static void initLookupTables()
 {
     int i;
     uint8_t msg[112/8];
-    
+
     for (i = 0; i < 256; ++i) {
         uint32_t c = i << 16;
         int j;
@@ -141,7 +141,7 @@ static int prepareSubtable(struct errorinfo *table, int n, int maxsize, int offs
         table[n].syndrome ^= single_bit_syndrome[i + offset];
         table[n].errors = error_bit+1;
         table[n].bit[error_bit] = i;
-        
+
         ++n;
         n = prepareSubtable(table, n, maxsize, offset, i + 1, endbit, &table[n-1], error_bit + 1, max_errors);
     }
@@ -200,8 +200,8 @@ static struct errorinfo *prepareErrorTable(int bits, int max_correct, int max_de
         maxsize += combinations(bits - 5, i); // space needed for all i-bit errors
     }
 
-#ifdef CRCDEBUG    
-    fprintf(stderr, "Preparing syndrome table to correct up to %d-bit errors (detecting %d-bit errors) in a %d-bit message (max %d entries)\n", max_correct, max_detect, bits, maxsize);
+#ifdef CRCDEBUG
+    FPRINTF(stderr, "Preparing syndrome table to correct up to %d-bit errors (detecting %d-bit errors) in a %d-bit message (max %d entries)\n", max_correct, max_detect, bits, maxsize);
 #endif
 
     table = malloc(maxsize * sizeof(struct errorinfo));
@@ -212,27 +212,27 @@ static struct errorinfo *prepareErrorTable(int bits, int max_correct, int max_de
 
     // ignore the first 5 bits (DF type)
     usedsize = prepareSubtable(table, 0, maxsize, 112 - bits, 5, bits, &base_entry, 0, max_correct);
-    
+
 #ifdef CRCDEBUG
-    fprintf(stderr, "%d syndromes (expected %d).\n", usedsize, maxsize);
-    fprintf(stderr, "Sorting syndromes..\n");
+    FPRINTF(stderr, "%d syndromes (expected %d).\n", usedsize, maxsize);
+    FPRINTF(stderr, "Sorting syndromes..\n");
 #endif
 
     qsort(table, usedsize, sizeof(struct errorinfo), syndrome_compare);
 
-#ifdef CRCDEBUG    
+#ifdef CRCDEBUG
     {
         // Show the table stats
-        fprintf(stderr, "Undetectable errors:\n");
+        FPRINTF(stderr, "Undetectable errors:\n");
         for (i = 1; i <= max_correct; ++i) {
             int j, count;
-            
+
             count = 0;
-            for (j = 0; j < usedsize; ++j) 
+            for (j = 0; j < usedsize; ++j)
                 if (table[j].errors == i && table[j].syndrome == 0)
                     ++count;
 
-            fprintf(stderr, "  %d undetectable %d-bit errors\n", count, i);
+            FPRINTF(stderr, "  %d undetectable %d-bit errors\n", count, i);
         }
     }
 #endif
@@ -240,8 +240,8 @@ static struct errorinfo *prepareErrorTable(int bits, int max_correct, int max_de
     // Handle ambiguous cases, where there is more than one possible error pattern
     // that produces a given syndrome (this happens with >2 bit errors).
 
-#ifdef CRCDEBUG    
-    fprintf(stderr, "Finding collisions..\n");
+#ifdef CRCDEBUG
+    FPRINTF(stderr, "Finding collisions..\n");
 #endif
     for (i = 0, j = 0; i < usedsize; ++i) {
         if (i < usedsize-1 && table[i+1].syndrome == table[i].syndrome) {
@@ -260,23 +260,23 @@ static struct errorinfo *prepareErrorTable(int bits, int max_correct, int max_de
 
     if (j < usedsize) {
 #ifdef CRCDEBUG
-        fprintf(stderr, "Discarded %d collisions.\n", usedsize - j);
+        FPRINTF(stderr, "Discarded %d collisions.\n", usedsize - j);
 #endif
         usedsize = j;
     }
-    
+
     // Flag collisions we want to detect but not correct
     if (max_detect > max_correct) {
         int flagged;
 
 #ifdef CRCDEBUG
-        fprintf(stderr, "Flagging collisions between %d - %d bits..\n", max_correct+1, max_detect);
+        FPRINTF(stderr, "Flagging collisions between %d - %d bits..\n", max_correct+1, max_detect);
 #endif
 
         flagged = flagCollisions(table, usedsize, 112 - bits, 5, bits, 0, 1, max_correct+1, max_detect);
 
 #ifdef CRCDEBUG
-        fprintf(stderr, "Flagged %d collisions for removal.\n", flagged);
+        FPRINTF(stderr, "Flagged %d collisions for removal.\n", flagged);
 #else
 #endif
 
@@ -290,7 +290,7 @@ static struct errorinfo *prepareErrorTable(int bits, int max_correct, int max_de
             }
 
 #ifdef CRCDEBUG
-            fprintf(stderr, "Discarded %d flagged collisions.\n", usedsize - j);
+            FPRINTF(stderr, "Discarded %d flagged collisions.\n", usedsize - j);
 #endif
             usedsize = j;
         }
@@ -298,13 +298,13 @@ static struct errorinfo *prepareErrorTable(int bits, int max_correct, int max_de
 
     if (usedsize < maxsize) {
 #ifdef CRCDEBUG
-        fprintf(stderr, "Shrinking table from %d to %d..\n", maxsize, usedsize);
+        FPRINTF(stderr, "Shrinking table from %d to %d..\n", maxsize, usedsize);
         table = realloc(table, usedsize * sizeof(struct errorinfo));
 #endif
     }
-    
+
     *size_out = usedsize;
-    
+
 #ifdef CRCDEBUG
     {
         // Check the table.
@@ -323,29 +323,29 @@ static struct errorinfo *prepareErrorTable(int bits, int max_correct, int max_de
 
             result = modesChecksum(msg, bits);
             if (result != ei->syndrome) {
-                fprintf(stderr, "PROBLEM: entry %6d/%6d  syndrome %06x  errors %d  bits ", i, usedsize, ei->syndrome, ei->errors);
+                FPRINTF(stderr, "PROBLEM: entry %6d/%6d  syndrome %06x  errors %d  bits ", i, usedsize, ei->syndrome, ei->errors);
                 for (j = 0; j < ei->errors; ++j)
-                    fprintf(stderr, "%3d ", ei->bit[j]);
-                fprintf(stderr, " checksum %06x\n", result);
+                    FPRINTF(stderr, "%3d ", ei->bit[j]);
+                FPRINTF(stderr, " checksum %06x\n", result);
             }
         }
         free(msg);
 
         // Show the table stats
-        fprintf(stderr, "Syndrome table summary:\n");
+        FPRINTF(stderr, "Syndrome table summary:\n");
         for (i = 1; i <= max_correct; ++i) {
             int j, count, possible;
-            
+
             count = 0;
-            for (j = 0; j < usedsize; ++j) 
+            for (j = 0; j < usedsize; ++j)
                 if (table[j].errors == i)
                     ++count;
 
             possible = combinations(bits-5, i);
-            fprintf(stderr, "  %d entries for %d-bit errors (%d possible, %d%% coverage)\n", count, i, possible, 100 * count / possible);
+            FPRINTF(stderr, "  %d entries for %d-bit errors (%d possible, %d%% coverage)\n", count, i, possible, 100 * count / possible);
         }
 
-        fprintf(stderr, "  %d entries total\n", usedsize);
+        FPRINTF(stderr, "  %d entries total\n", usedsize);
     }
 #endif
 
@@ -373,10 +373,10 @@ void modesChecksumInit(int fixBits)
     default:
         // Detect out to 4 bit errors; this reduces our 2-bit coverage to about 65%.
         // This can take a little while - tell the user.
-        fprintf(stderr, "Preparing error correction tables.. ");
+        FPRINTF(stderr, "Preparing error correction tables.. ");
         bitErrorTable_short = prepareErrorTable(MODES_SHORT_MSG_BITS, 2, 4, &bitErrorTableSize_short);
         bitErrorTable_long = prepareErrorTable(MODES_LONG_MSG_BITS, 2, 4, &bitErrorTableSize_long);
-        fprintf(stderr, "done.\n");
+        FPRINTF(stderr, "done.\n");
         break;
     }
 }
@@ -426,7 +426,7 @@ int main(int argc, char **argv)
     struct errorinfo *shorttable, *longtable;
 
     if (argc < 3) {
-        fprintf(stderr, "syntax: crctests <ncorrect> <ndetect>\n");
+        FPRINTF(stderr, "syntax: crctests <ncorrect> <ndetect>\n");
         return 1;
     }
 
@@ -478,7 +478,7 @@ int main(int argc, char **argv)
 
     // So in the DF11 correction logic, we just discard messages that require more than a 1 bit fix.
 
-    fprintf(stderr, "checking %d syndromes for DF11 collisions..\n", shortlen);
+    FPRINTF(stderr, "checking %d syndromes for DF11 collisions..\n", shortlen);
     for (i = 0; i < shortlen; ++i) {
         if ((shorttable[i].syndrome & 0xFF) == 0) {
             int j;
@@ -525,20 +525,20 @@ int main(int argc, char **argv)
                     }
 
                     if (mismatch) {
-                        fprintf(stderr,
+                        FPRINTF(stderr,
                                 "DF11 correction collision: \n"
                                 "  syndrome 1 = %06X  bits=[",
                                 shorttable[i].syndrome);
                         for (k = 0; k < shorttable[i].errors; ++k)
-                            fprintf(stderr, " %d", shorttable[i].bit[k]);
-                        fprintf(stderr, " ]\n");
+                            FPRINTF(stderr, " %d", shorttable[i].bit[k]);
+                        FPRINTF(stderr, " ]\n");
 
-                        fprintf(stderr,
+                        FPRINTF(stderr,
                                 "  syndrome 2 = %06X  bits=[",
                                 shorttable[j].syndrome);
                         for (k = 0; k < shorttable[j].errors; ++k)
-                            fprintf(stderr, " %d", shorttable[j].bit[k]);
-                        fprintf(stderr, " ]\n");
+                            FPRINTF(stderr, " %d", shorttable[j].bit[k]);
+                        FPRINTF(stderr, " ]\n");
                     }
                 } else {
                     break;

@@ -4,20 +4,20 @@
 //
 // Copyright (c) 2014,2015 Oliver Jowett <oliver@mutability.co.uk>
 //
-// This file is free software: you may copy, redistribute and/or modify it  
+// This file is free software: you may copy, redistribute and/or modify it
 // under the terms of the GNU General Public License as published by the
-// Free Software Foundation, either version 2 of the License, or (at your  
-// option) any later version.  
+// Free Software Foundation, either version 2 of the License, or (at your
+// option) any later version.
 //
-// This file is distributed in the hope that it will be useful, but  
-// WITHOUT ANY WARRANTY; without even the implied warranty of  
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// This file is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License  
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file incorporates work covered by the following copyright and  
+// This file incorporates work covered by the following copyright and
 // permission notice:
 //
 //   Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>
@@ -89,7 +89,7 @@ struct net_service *serviceInit(const char *descr, struct net_writer *writer, he
     struct net_service *service;
 
     if (!(service = calloc(sizeof(*service), 1))) {
-        fprintf(stderr, "Out of memory allocating service %s\n", descr);
+        FPRINTF(stderr, "Out of memory allocating service %s\n", descr);
         exit(1);
     }
 
@@ -105,7 +105,7 @@ struct net_service *serviceInit(const char *descr, struct net_writer *writer, he
 
     if (service->writer) {
         if (! (service->writer->data = malloc(MODES_OUT_BUF_SIZE)) ) {
-            fprintf(stderr, "Out of memory allocating output buffer for service %s\n", descr);
+            FPRINTF(stderr, "Out of memory allocating output buffer for service %s\n", descr);
             exit(1);
         }
 
@@ -133,7 +133,7 @@ struct client *createGenericClient(struct net_service *service, int fd)
     anetNonBlock(Modes.aneterr, fd);
 
     if (!(c = (struct client *) malloc(sizeof(*c)))) {
-        fprintf(stderr, "Out of memory allocating a new %s network client\n", service->descr);
+        FPRINTF(stderr, "Out of memory allocating a new %s network client\n", service->descr);
         exit(1);
     }
 
@@ -177,7 +177,7 @@ void serviceListen(struct net_service *service, char *bind_addr, char *bind_port
     char buf[128];
 
     if (service->listener_count > 0) {
-        fprintf(stderr, "Tried to set up the service %s twice!\n", service->descr);
+        FPRINTF(stderr, "Tried to set up the service %s twice!\n", service->descr);
         exit(1);
     }
 
@@ -205,14 +205,14 @@ void serviceListen(struct net_service *service, char *bind_addr, char *bind_port
 
         nfds = anetTcpServer(Modes.aneterr, buf, bind_addr, newfds, sizeof(newfds));
         if (nfds == ANET_ERR) {
-            fprintf(stderr, "Error opening the listening port %s (%s): %s\n",
+            FPRINTF(stderr, "Error opening the listening port %s (%s): %s\n",
                     buf, service->descr, Modes.aneterr);
             exit(1);
         }
 
         fds = realloc(fds, (n+nfds) * sizeof(int));
         if (!fds) {
-            fprintf(stderr, "out of memory\n");
+            FPRINTF(stderr, "out of memory\n");
             exit(1);
         }
 
@@ -255,7 +255,7 @@ void modesInitNet(void) {
 
     s = serviceInit("Stratux TCP output", &Modes.stratux_out, send_stratux_heartbeat, NULL, NULL);
     serviceListen(s, Modes.net_bind_address, Modes.net_output_stratux_ports);
-    
+
     s = serviceInit("Raw TCP input", NULL, NULL, "\n", decodeHexMessage);
     serviceListen(s, Modes.net_bind_address, Modes.net_input_raw_ports);
 
@@ -293,7 +293,7 @@ static struct client * modesAcceptClients(void) {
 //
 static void modesCloseClient(struct client *c) {
     if (!c->service) {
-        fprintf(stderr, "warning: double close of net client\n");
+        FPRINTF(stderr, "warning: double close of net client\n");
         return;
     }
 
@@ -545,7 +545,7 @@ static void modesSendSBSOutput(struct modesMessage *mm, struct aircraft *a) {
     }
 
     // Fields 1 to 6 : SBS message type and ICAO address of the aircraft and some other stuff
-    p += sprintf(p, "MSG,%d,111,11111,%06X,111111,", msgType, mm->addr); 
+    p += sprintf(p, "MSG,%d,111,11111,%06X,111111,", msgType, mm->addr);
 
     // Find current system time
     clock_gettime(CLOCK_REALTIME, &now);
@@ -585,10 +585,10 @@ static void modesSendSBSOutput(struct modesMessage *mm, struct aircraft *a) {
     if (mm->bFlags & MODES_ACFLAGS_SPEED_VALID) {
         p += sprintf(p, ",%d", mm->velocity);
     } else {
-        p += sprintf(p, ","); 
+        p += sprintf(p, ",");
     }
 
-    // Field 14 is the ground Heading (if we have it)       
+    // Field 14 is the ground Heading (if we have it)
     if (mm->bFlags & MODES_ACFLAGS_HEADING_VALID) {
         p += sprintf(p, ",%d", mm->heading);
     } else {
@@ -696,7 +696,7 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
     if (!p)
         return;
 
-    
+
     // Decide on the basic SBS Message Type
     if        ((mm->msgtype ==  4) || (mm->msgtype == 20)) {
         msgType = 5;
@@ -732,27 +732,27 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
 
     // Begin populating fields.
 	// ICAO address, Mode S message types, and signal level
-    
+
     int cacf = 0; // overload the JSON "CA" field to report CA (DF11 or DF17), CF (DF18), or zero (all other DF types)
     if ((mm->msgtype == 11) || (mm->msgtype == 17)) {
         cacf = mm->ca;
     } else if (mm->msgtype == 18) {
         cacf = mm->cf;
     }
-    
-	p += sprintf(p, "{\"Icao_addr\":%d,\"DF\":%d,\"CA\":%d,\"TypeCode\":%d,\"SubtypeCode\":%d,\"SBS_MsgType\":%d,\"SignalLevel\":%f,",mm->addr, mm->msgtype, cacf, mm->metype,  mm->mesub, msgType, mm->signalLevel); 
-    
+
+	p += sprintf(p, "{\"Icao_addr\":%d,\"DF\":%d,\"CA\":%d,\"TypeCode\":%d,\"SubtypeCode\":%d,\"SBS_MsgType\":%d,\"SignalLevel\":%f,",mm->addr, mm->msgtype, cacf, mm->metype,  mm->mesub, msgType, mm->signalLevel);
+
  	// Callsign
 	if (mm->bFlags & MODES_ACFLAGS_CALLSIGN_VALID) {
 		p += sprintf(p, "\"Tail\":\"%s\",", mm->flight);
 	} else {
 		p += sprintf(p, "\"Tail\":null,");
-	}   
-    
+	}
+
     //Squawk code, decimal representation. E.g. the emergency code is represented as 7700 (0x1e14 == 017024), not 4032 (0x0FC0 == 07700)
     if (mm->bFlags & MODES_ACFLAGS_SQUAWK_VALID) {p += sprintf(p, "\"Squawk\":%x,", mm->modeA);}
-    else                                         {p += sprintf(p, "\"Squawk\":null,");}    
-    
+    else                                         {p += sprintf(p, "\"Squawk\":null,");}
+
     // Emitter type
 	int emitter = 0;
 	int setEmitter = 0;
@@ -772,13 +772,13 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
 				setEmitter = 1;
 		}
 	}
-	
+
 	if (setEmitter) {
 		p += sprintf(p, "\"Emitter_category\":%d,", emitter);
 	} else {
 		p += sprintf(p, "\"Emitter_category\":null,");
 	}
-    
+
     // OnGround status
     if (mm->bFlags & MODES_ACFLAGS_AOG_VALID) {
         if (mm->bFlags & MODES_ACFLAGS_AOG) {
@@ -789,32 +789,32 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
     } else {
         p += sprintf(p, "\"OnGround\":null,");
     }
-    
+
     // Position and position valid flag
 	if (mm->bFlags & MODES_ACFLAGS_LATLON_VALID) {
 		p += sprintf(p, "\"Lat\":%.6f,\"Lng\":%.6f,\"Position_valid\":true,",mm->fLat, mm->fLon);
 	} else {
 		p += sprintf(p, "\"Lat\":null,\"Lng\":null,\"Position_valid\":false,");
 	}
-	
+
     // Navigation Accuracy Category - Position
     if (mm->bFlags & MODES_ACFLAGS_OP_STATUS_VALID) {
         p += sprintf(p, "\"NACp\":%d,", mm->nacp);
     } else {
 	    p += sprintf(p, "\"NACp\":null,");
-    }  
-    
+    }
+
 	// Altitude
-	if ((mm->bFlags & MODES_ACFLAGS_AOG_GROUND) == MODES_ACFLAGS_AOG_GROUND) {  
+	if ((mm->bFlags & MODES_ACFLAGS_AOG_GROUND) == MODES_ACFLAGS_AOG_GROUND) {
         p += sprintf(p, "\"Alt\":0,");
     } else if (mm->bFlags & MODES_ACFLAGS_ALTITUDE_VALID) {
 		p += sprintf(p, "\"Alt\":%d,",mm->altitude);
     } else {
 		p += sprintf(p, "\"Alt\":null,");
     }
-    
+
     // Altitude Source. True if altitude source is GNSS, false if pressure altitude.
-    if (mm->bFlags & MODES_ACFLAGS_ALTITUDE_HAE_VALID) { 
+    if (mm->bFlags & MODES_ACFLAGS_ALTITUDE_HAE_VALID) {
         p += sprintf(p, "\"AltIsGNSS\":true,");
 	} else {
         p += sprintf(p, "\"AltIsGNSS\":false,");
@@ -824,20 +824,20 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
         p += sprintf(p, "\"GnssDiffFromBaroAlt\":%d,",a->hae_delta);
     } else {
         p += sprintf(p, "\"GnssDiffFromBaroAlt\":null,");
-    }    
-    
+    }
+
  	//Vertical velocity
 	if (mm->bFlags & MODES_ACFLAGS_VERTRATE_VALID) {
 		p += sprintf(p, "\"Vvel\":%d,", mm->vert_rate);
 	} else {
 		p += sprintf(p,  "\"Vvel\":null,");
-	} 
+	}
 
 	// Ground speed and track
     if (mm->bFlags & MODES_ACFLAGS_SPEED_VALID) {
         p += sprintf(p, "\"Speed_valid\":true,\"Speed\":%d,", mm->velocity);
     } else {
-        p += sprintf(p, "\"Speed_valid\":false,\"Speed\":null,"); 
+        p += sprintf(p, "\"Speed_valid\":false,\"Speed\":null,");
     }
 
     if (mm->bFlags & MODES_ACFLAGS_HEADING_VALID) {
@@ -848,14 +848,14 @@ static void modesSendStratuxOutput(struct modesMessage *mm, struct aircraft *a) 
 
     // Find current system time
     clock_gettime(CLOCK_REALTIME, &now);
-    gmtime_r(&now.tv_sec, &stTime_now);  // we expect UTC 
+    gmtime_r(&now.tv_sec, &stTime_now);  // we expect UTC
 
     // Find message reception time
     gmtime_r(&mm->sysTimestampMsg.tv_sec, &stTime_receive); // we expect UTC
 
     //Time message received (based on system clock). Format is 2016-02-20T06:35:43.155Z
 	p += sprintf(p, "\"Timestamp\":\"%04d-%02d-%02dT%02d:%02d:%02d.%03dZ\"", (stTime_receive.tm_year+1900),(stTime_receive.tm_mon+1), stTime_receive.tm_mday, stTime_receive.tm_hour, stTime_receive.tm_min, stTime_receive.tm_sec, (unsigned) (mm->sysTimestampMsg.tv_nsec / 1000000U));
-    
+
     p += sprintf(p, "}\r\n");
 
     completeWrite(&Modes.stratux_out, p);
@@ -926,7 +926,7 @@ static int decodeBinMessage(struct client *c, char *p) {
     memset(&mm, 0, sizeof(mm));
 
     ch = *p++; /// Get the message type
-    if (0x1A == ch) {p++;} 
+    if (0x1A == ch) {p++;}
 
     if       ((ch == '1') && (Modes.mode_ac)) { // skip ModeA/C unless user enables --modes-ac
         msgLen = MODEAC_MSG_BYTES;
@@ -1002,13 +1002,13 @@ static int hexDigitVal(int c) {
 //
 // This function decodes a string representing message in raw hex format
 // like: *8D4B969699155600E87406F5B69F; The string is null-terminated.
-// 
+//
 // The message is passed to the higher level layers, so it feeds
 // the selected screen output, the network output and so forth.
-// 
+//
 // If the message looks invalid it is silently discarded.
 //
-// The function always returns 0 (success) to the caller as there is no 
+// The function always returns 0 (success) to the caller as there is no
 // case where we want broken messages here to close the client connection.
 //
 static int decodeHexMessage(struct client *c, char *hex) {
@@ -1058,13 +1058,13 @@ static int decodeHexMessage(struct client *c, char *hex) {
             break;}
     }
 
-    if ( (l != (MODEAC_MSG_BYTES      * 2)) 
-      && (l != (MODES_SHORT_MSG_BYTES * 2)) 
+    if ( (l != (MODEAC_MSG_BYTES      * 2))
+      && (l != (MODES_SHORT_MSG_BYTES * 2))
       && (l != (MODES_LONG_MSG_BYTES  * 2)) )
         {return (0);} // Too short or long message... broken
 
-    if ( (0 == Modes.mode_ac) 
-      && (l == (MODEAC_MSG_BYTES * 2)) ) 
+    if ( (0 == Modes.mode_ac)
+      && (l == (MODEAC_MSG_BYTES * 2)) )
         {return (0);} // Right length for ModeA/C, but not enabled
 
     for (j = 0; j < l; j += 2) {
@@ -1178,11 +1178,11 @@ char *generateAircraftJson(const char *url_path, int *len) {
             continue;
         }
 
-        if (first)            
+        if (first)
             first = 0;
         else
             *p++ = ',';
-            
+
         p += snprintf(p, end-p, "\n    {\"hex\":\"%s%06x\"", (a->addr & MODES_NON_ICAO_ADDRESS) ? "~" : "", a->addr & 0xFFFFFF);
         if (a->bFlags & MODES_ACFLAGS_SQUAWK_VALID)
             p += snprintf(p, end-p, ",\"squawk\":\"%04x\"", a->modeA);
@@ -1215,7 +1215,7 @@ char *generateAircraftJson(const char *url_path, int *len) {
                       a->messages, (now - a->seen)/1000.0,
                       10 * log10((a->signalLevel[0] + a->signalLevel[1] + a->signalLevel[2] + a->signalLevel[3] +
                                   a->signalLevel[4] + a->signalLevel[5] + a->signalLevel[6] + a->signalLevel[7] + 1e-5) / 8));
-        
+
         // If we're getting near the end of the buffer, expand it.
         if ((end - p) < 512) {
             int used = p - buf;
@@ -1347,7 +1347,7 @@ static char * appendStatsJson(char *p,
 
     return p;
 }
-    
+
 char *generateStatsJson(const char *url_path, int *len) {
     struct stats add;
     char *buf = (char *) malloc(4096), *p = buf, *end = buf + 4096;
@@ -1369,7 +1369,7 @@ char *generateStatsJson(const char *url_path, int *len) {
 
     add_stats(&Modes.stats_alltime, &Modes.stats_current, &add);
     p = appendStatsJson(p, end, &add, "total");
-    p += snprintf(p, end-p, "\n}\n");    
+    p += snprintf(p, end-p, "\n}\n");
 
     assert(p <= end);
 
@@ -1455,7 +1455,7 @@ void writeJsonToFile(const char *file, char * (*generator) (const char *,int*))
     fd = mkstemp(tmppath);
     if (fd < 0)
         return;
-    
+
     mask = umask(0);
     umask(mask);
     fchmod(fd, 0644 & ~mask);
@@ -1554,7 +1554,7 @@ static int handleHTTPRequest(struct client *c, char *p) {
         printf("\nHTTP keep alive: %d\n", keepalive);
         printf("HTTP requested URL: %s\n\n", url);
     }
-    
+
     // Ditch any trailing query part (AJAX might add one to avoid caching)
     p = strchr(url, '?');
     if (p) *p = 0;
@@ -1577,7 +1577,7 @@ static int handleHTTPRequest(struct client *c, char *p) {
             break;
         }
     }
-            
+
     if (!content) {
         struct stat sbuf;
         int fd = -1;
@@ -1617,7 +1617,7 @@ static int handleHTTPRequest(struct client *c, char *p) {
             statuscode = 404;
             statusmsg = "Not Found";
         }
-        
+
         if (fd != -1) {
             close(fd);
         }
@@ -1625,7 +1625,7 @@ static int handleHTTPRequest(struct client *c, char *p) {
         // Get file extension and content type
         content_type = MODES_CONTENT_TYPE_HTML; // Default content type
         ext = strrchr(getFile, '.');
-        
+
         if (ext) {
             if (!strcmp(ext, ".json")) {
                 content_type = MODES_CONTENT_TYPE_JSON;
@@ -1665,10 +1665,10 @@ static int handleHTTPRequest(struct client *c, char *p) {
 
     // Send header and content.
 #ifndef _WIN32
-    if ( (write(c->fd, hdr, hdrlen) != hdrlen) 
+    if ( (write(c->fd, hdr, hdrlen) != hdrlen)
       || (write(c->fd, content, clen) != clen) ) {
 #else
-    if ( (send(c->fd, hdr, hdrlen, 0) != hdrlen) 
+    if ( (send(c->fd, hdr, hdrlen, 0) != hdrlen)
       || (send(c->fd, content, clen, 0) != clen) ) {
 #endif
         free(content);
@@ -1885,7 +1885,7 @@ static void writeFATSV()
             altValid = (altAge <= 30000);
             used_tisb |= (a->tisbFlags & MODES_ACFLAGS_ALTITUDE_VALID);
         }
-        
+
         if (flags & MODES_ACFLAGS_AOG_VALID) {
             groundValid = 1;
 
@@ -2013,7 +2013,7 @@ static void writeFATSV()
         if (p <= end)
             completeWrite(&Modes.fatsv_out, p);
         else
-            fprintf(stderr, "fatsv: output too large (max %d, overran by %d)\n", TSV_MAX_PACKET_SIZE, (int) (p - end));
+            FPRINTF(stderr, "fatsv: output too large (max %d, overran by %d)\n", TSV_MAX_PACKET_SIZE, (int) (p - end));
 #       undef bufsize
 
         a->fatsv_last_emitted = now;

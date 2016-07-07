@@ -4,20 +4,20 @@
 //
 // Copyright (c) 2014,2015 Oliver Jowett <oliver@mutability.co.uk>
 //
-// This file is free software: you may copy, redistribute and/or modify it  
+// This file is free software: you may copy, redistribute and/or modify it
 // under the terms of the GNU General Public License as published by the
-// Free Software Foundation, either version 2 of the License, or (at your  
-// option) any later version.  
+// Free Software Foundation, either version 2 of the License, or (at your
+// option) any later version.
 //
-// This file is distributed in the hope that it will be useful, but  
-// WITHOUT ANY WARRANTY; without even the implied warranty of  
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// This file is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License  
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file incorporates work covered by the following copyright and  
+// This file incorporates work covered by the following copyright and
 // permission notice:
 //
 //   Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>
@@ -358,10 +358,10 @@ struct modesMessage {
     // Generic fields
     unsigned char msg[MODES_LONG_MSG_BYTES];      // Binary message.
     unsigned char verbatim[MODES_LONG_MSG_BYTES]; // Binary message, as originally received before correction
-    int           msgbits;                        // Number of bits in message 
+    int           msgbits;                        // Number of bits in message
     int           msgtype;                        // Downlink format #
     uint32_t      crc;                            // Message CRC
-    int           correctedbits;                  // No. of bits corrected 
+    int           correctedbits;                  // No. of bits corrected
     uint32_t      addr;                           // Address Announced
     uint64_t      timestampMsg;                   // Timestamp of the message (12MHz clock)
     struct timespec sysTimestampMsg;              // Timestamp of the message (system time)
@@ -404,9 +404,15 @@ struct modesMessage {
 
     // Fields used by multiple message types.
     int  altitude;
-    int  unit; 
+    int  unit;
     int  bFlags;                // Flags related to fields in this structure
 };
+
+#ifdef BUILD_LIB
+#define FPRINTF(f, fmt, ...) stratuxLog(fmt, ##__VA_ARGS__)
+#else
+#define FPRINTF(f, ...) fprintf(f, __VA_ARGS__)
+#endif
 
 // This one needs modesMessage:
 #include "track.h"
@@ -415,6 +421,11 @@ struct modesMessage {
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef BUILD_LIB
+void stratux_log(char *fmt, ...);
+#include "stratux_exports.h"
 #endif
 
 //

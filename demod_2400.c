@@ -4,17 +4,17 @@
 //
 // Copyright (c) 2014,2015 Oliver Jowett <oliver@mutability.co.uk>
 //
-// This file is free software: you may copy, redistribute and/or modify it  
+// This file is free software: you may copy, redistribute and/or modify it
 // under the terms of the GNU General Public License as published by the
-// Free Software Foundation, either version 2 of the License, or (at your  
-// option) any later version.  
+// Free Software Foundation, either version 2 of the License, or (at your
+// option) any later version.
 //
-// This file is distributed in the hope that it will be useful, but  
-// WITHOUT ANY WARRANTY; without even the implied warranty of  
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// This file is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License  
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "dump1090.h"
@@ -185,7 +185,7 @@ void demodulate2400(struct mag_buf *mag)
         // phase 6: 0/4\2 2/4\0 0 0 0 2/4\0/5\1 0 0 0 0 0 0 X2
         // phase 7: 0/3 3\1/5\0 0 0 0 1/5\0/4\2 0 0 0 0 0 0 X3
         //
-        
+
         // quick check: we must have a rising edge 0->1 and a falling edge 12->13
         if (! (preamble[0] < preamble[1] && preamble[12] > preamble[13]) )
            continue;
@@ -261,7 +261,7 @@ void demodulate2400(struct mag_buf *mag)
             if (initial_phase < 0) {
                 continue; // nothing satisfactory
             }
-            
+
             first_phase = last_phase = initial_phase;  // try only the phase we think it is
         }
 
@@ -273,7 +273,7 @@ void demodulate2400(struct mag_buf *mag)
 
             // Decode all the next 112 bits, regardless of the actual message
             // size. We'll check the actual message type later
-            
+
             pPtr = &m[j+19] + (try_phase/5);
             phase = try_phase % 5;
 
@@ -283,7 +283,7 @@ void demodulate2400(struct mag_buf *mag)
 
                 switch (phase) {
                 case 0:
-                    theByte = 
+                    theByte =
                         (slice_phase0(pPtr) > 0 ? 0x80 : 0) |
                         (slice_phase2(pPtr+2) > 0 ? 0x40 : 0) |
                         (slice_phase4(pPtr+4) > 0 ? 0x20 : 0) |
@@ -297,7 +297,7 @@ void demodulate2400(struct mag_buf *mag)
                     phase = 1;
                     pPtr += 19;
                     break;
-                    
+
                 case 1:
                     theByte =
                         (slice_phase1(pPtr) > 0 ? 0x80 : 0) |
@@ -312,7 +312,7 @@ void demodulate2400(struct mag_buf *mag)
                     phase = 2;
                     pPtr += 19;
                     break;
-                    
+
                 case 2:
                     theByte =
                         (slice_phase2(pPtr) > 0 ? 0x80 : 0) |
@@ -327,9 +327,9 @@ void demodulate2400(struct mag_buf *mag)
                     phase = 3;
                     pPtr += 19;
                     break;
-                    
+
                 case 3:
-                    theByte = 
+                    theByte =
                         (slice_phase3(pPtr) > 0 ? 0x80 : 0) |
                         (slice_phase0(pPtr+3) > 0 ? 0x40 : 0) |
                         (slice_phase2(pPtr+5) > 0 ? 0x20 : 0) |
@@ -342,9 +342,9 @@ void demodulate2400(struct mag_buf *mag)
                     phase = 4;
                     pPtr += 19;
                     break;
-                    
+
                 case 4:
-                    theByte = 
+                    theByte =
                         (slice_phase4(pPtr) > 0 ? 0x80 : 0) |
                         (slice_phase1(pPtr+3) > 0 ? 0x40 : 0) |
                         (slice_phase3(pPtr+5) > 0 ? 0x20 : 0) |
@@ -364,7 +364,7 @@ void demodulate2400(struct mag_buf *mag)
                     switch (msg[0] >> 3) {
                     case 0: case 4: case 5: case 11:
                         bytelen = MODES_SHORT_MSG_BYTES; break;
-                        
+
                     case 16: case 17: case 18: case 20: case 21: case 24:
                         break;
 
@@ -382,7 +382,7 @@ void demodulate2400(struct mag_buf *mag)
                 bestmsg = msg;
                 bestscore = score;
                 bestphase = try_phase;
-                
+
                 // swap to using the other buffer so we don't clobber our demodulated data
                 // (if we find a better result then we'll swap back, but that's OK because
                 // we no longer need this copy if we found a better one)
@@ -457,7 +457,7 @@ void demodulate2400(struct mag_buf *mag)
         //  few bits of the first message, but the message bits didn't
         //  overlap)
         j += msglen*12/5;
-            
+
         // Pass data to the next layer
         useModesMessage(&mm);
     }
@@ -637,10 +637,10 @@ void demodulate2400AC(struct mag_buf *mag)
         unsigned signal_threshold = (unsigned) (midpoint * 1.414214 + 0.5); // +3dB from midpoint
 
 #if 0
-        fprintf(stderr, "f1f2 %u x1x2x3 %u midpoint %.0f noise_threshold %u signal_threshold %u\n",
+        FPRINTF(stderr, "f1f2 %u x1x2x3 %u midpoint %.0f noise_threshold %u signal_threshold %u\n",
                 f1f2_signal, x1x2x3_noise, midpoint, noise_threshold, signal_threshold);
 
-        fprintf(stderr, "f1 %u f2 %u x1 %u x2 %u x3 %u\n",
+        FPRINTF(stderr, "f1 %u f2 %u x1 %u x2 %u x3 %u\n",
                 f1_signal, f2_signal, x1_noise, x2_noise, x3_noise);
 #endif
 
@@ -669,7 +669,7 @@ void demodulate2400AC(struct mag_buf *mag)
 
             // check for excessive noise in the quiet period
             if (m[sample+2] >= noise_threshold) {
-                //fprintf(stderr, "bit %u was not quiet (%u > %u)\n", bit, m[sample+2], signal_threshold);
+                //FPRINTF(stderr, "bit %u was not quiet (%u > %u)\n", bit, m[sample+2], signal_threshold);
                 noisy_bits |= 1;
                 continue;
             }
@@ -680,7 +680,7 @@ void demodulate2400AC(struct mag_buf *mag)
                 bits |= 1;
             } else if (bit_signal > noise_threshold) {
                 /* not certain about this bit */
-                //fprintf(stderr, "bit %u was uncertain (%u < %u < %u)\n", bit, noise_threshold, bit_signal, signal_threshold);
+                //FPRINTF(stderr, "bit %u was uncertain (%u < %u < %u)\n", bit, noise_threshold, bit_signal, signal_threshold);
                 noisy_bits |= 1;
             } else {
                 /* this bit is off */
@@ -688,7 +688,7 @@ void demodulate2400AC(struct mag_buf *mag)
         }
 
 #if 0
-        fprintf(stderr, "bits: %06X  noisy: %06X\n", bits, noisy_bits);
+        FPRINTF(stderr, "bits: %06X  noisy: %06X\n", bits, noisy_bits);
 
         unsigned j, sample;
         static const char *names[24] = {
@@ -700,17 +700,17 @@ void demodulate2400AC(struct mag_buf *mag)
             "X6", "X7", "X8", "X9"
         };
 
-        fprintf(stderr, "-1 ... %6u\n", m[f1_sample-1]);
+        FPRINTF(stderr, "-1 ... %6u\n", m[f1_sample-1]);
         for (j = 0; j < 24; ++j) {
             clock = f1_clock + 87 * j;
             sample = clock / 25;
-            fprintf(stderr, "%2u %-3s %6u %6u %6u %6u ", j, names[j], m[sample+0], m[sample+1], m[sample+2], m[sample+3]);
+            FPRINTF(stderr, "%2u %-3s %6u %6u %6u %6u ", j, names[j], m[sample+0], m[sample+1], m[sample+2], m[sample+3]);
             if ((m[sample+0] + m[sample+1])/2 >= signal_threshold) {
-                fprintf(stderr, "ON\n");
+                FPRINTF(stderr, "ON\n");
             } else if ((m[sample+0] + m[sample+1])/2 <= noise_threshold) {
-                fprintf(stderr, "OFF\n");
+                FPRINTF(stderr, "OFF\n");
             } else {
-                fprintf(stderr, "UNCERTAIN\n");
+                FPRINTF(stderr, "UNCERTAIN\n");
             }
         }
 #endif
