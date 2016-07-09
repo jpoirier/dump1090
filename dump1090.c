@@ -287,8 +287,9 @@ static void convert_samples(void *iq,
 //
 
 #ifdef BUILD_LIB
-int dev_index;
+static int dev_index;
 #endif
+
 int modesInitRTLSDR(void) {
 #ifndef BUILD_LIB
 
